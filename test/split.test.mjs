@@ -36,9 +36,9 @@ test('窗口天数：缺失 / 非法一律 null，0 是合法值', () => {
 test('到期时刻优先取 deductionEndTime，其次 expiredTime', () => {
   assert.equal(packageExpiryMs({ deductionEndTime: 123456 }), 123456)
   assert.equal(packageExpiryMs({ deductionEndTime: '123456' }), 123456)
-  assert.equal(packageExpiryMs({ expiredTime: '2026-11-20 10:00:00' }), Date.parse('2026-11-20T10:00:00'))
+  assert.equal(packageExpiryMs({ expiredTime: '2025-01-30 10:00:00' }), Date.parse('2025-01-30T10:00:00'))
   // 扣费截止无效时回落到 ExpiredTime
-  assert.equal(packageExpiryMs({ deductionEndTime: 0, expiredTime: '2026-11-20 10:00:00' }), Date.parse('2026-11-20T10:00:00'))
+  assert.equal(packageExpiryMs({ deductionEndTime: 0, expiredTime: '2025-01-30 10:00:00' }), Date.parse('2025-01-30T10:00:00'))
   assert.equal(packageExpiryMs({}), null)
 })
 
@@ -127,14 +127,14 @@ test('mergeSplits 空数组不炸', () => {
   assert.equal(merged.earliestExpiringAt, undefined)
 })
 
-test('倒计时用 floor：14.9 天不能说成 15 天', () => {
+test('最早到期给具体日期；天数是 floor，14.9 天不能说成 15 天', () => {
   const split = splitByExpiry([pkg({ remaining: 1, deductionEndTime: NOW + 14.9 * D })], 15, NOW)
-  assert.equal(earliestCaption(split, NOW, true), '还有 14 天')
+  assert.equal(earliestCaption(split, NOW, true), '最早 01/29 23:36（14 天）')
 })
 
-test('倒计时：不到一天说「今天到期」', () => {
+test('最早到期不到一天时给时刻，不说「今天到期」', () => {
   const split = splitByExpiry([pkg({ remaining: 1, deductionEndTime: NOW + 0.08 * D })], 15, NOW)
-  assert.equal(earliestCaption(split, NOW, true), '今天到期')
+  assert.equal(earliestCaption(split, NOW, true), '最早 01/15 03:55')
 })
 
 test('fmtAmount 两位小数、去掉尾随 0', () => {
