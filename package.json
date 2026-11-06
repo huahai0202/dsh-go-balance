@@ -1,0 +1,110 @@
+{
+  "name": "local-balance",
+  "version": "0.9.1",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huahai0202/dsh-go-channel-balance.git"
+  },
+  "homepage": "https://github.com/huahai0202/dsh-go-channel-balance#readme",
+  "keywords": [
+    "dsh",
+    "dsh-go",
+    "deepseek-harness",
+    "jet-hub",
+    "channel-balance"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0-0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dshGo": {
+    "v": 1,
+    "title": {
+      "zh": "渠道余额",
+      "en": "Channel balance"
+    },
+    "icon": "wallet",
+    "contributes": {
+      "composer.actions": [
+        {
+          "id": "open-balance",
+          "label": {
+            "zh": "渠道余额",
+            "en": "Balance"
+          },
+          "icon": "wallet",
+          "effect": {
+            "type": "open",
+            "page": "panel:balance"
+          }
+        }
+      ],
+      "message.actions": [
+        {
+          "id": "message-balance",
+          "label": {
+            "zh": "看看余额",
+            "en": "Balance"
+          },
+          "icon": "wallet",
+          "effect": {
+            "type": "open",
+            "page": "panel:balance"
+          }
+        }
+      ],
+      "panels": [
+        {
+          "id": "balance",
+          "title": {
+            "zh": "当前渠道余额",
+            "en": "Channel balance"
+          },
+          "icon": "wallet",
+          "placement": [
+            "session.tab",
+            "features",
+            "plugin"
+          ],
+          "presentation": "sheet"
+        },
+        {
+          "id": "manage",
+          "title": {
+            "zh": "模型与账号",
+            "en": "Models/accounts"
+          },
+          "icon": "settings",
+          "placement": [
+            "plugin"
+          ],
+          "presentation": "sheet"
+        },
+        {
+          "id": "channels",
+          "title": {
+            "zh": "选择渠道",
+            "en": "Channels"
+          },
+          "icon": "list",
+          "placement": [
+            "plugin"
+          ],
+          "presentation": "sheet"
+        }
+      ]
+    }
+  },
+  "description": "在输入框上方添加「渠道余额」胶囊；支持渠道余额、一键签到、渠道切换（独立面板）、模型开关与账号管理（合并在一个面板，含添加账号的浏览器登录、批量开关、启停/改名/刷新/测试/重置/删除）与 ChatGPT/Codex 账号使用额度查询。"
+}
