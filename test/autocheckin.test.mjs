@@ -1,43 +1,31 @@
-// 自动签到时刻校验的单测。跑法：node --test test/
+// 自动签到页的单测。跑法：node --test test/
 //
-// 锁的是「本地先挡掉非法时刻，别等 Jet Hub 回 bad-request」这件事：
-// Jet Hub 要求恰好两个 HH:MM、不能重复，本地先校验能给更清楚的提示。
+// 锁的是「这一页只有开关」：执行时刻属于 Jet Hub 自己的配置，插件不再提供
+// 「改执行时刻」入口（早先有一版做成了原生 list 选时刻，用户不要这个功能）。
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { validateTimes } from '../lib/panels/auto-checkin.js'
+import { createAutoCheckinSection } from '../lib/panels/auto-checkin.js'
 
-test('两个合法时刻：排好序返回', () => {
-  assert.deepEqual(validateTimes('21:00', '09:00').times, ['09:00', '21:00'])
-  assert.deepEqual(validateTimes('09:00', '21:00').times, ['09:00', '21:00'])
+/** 不连宿主：这一页的 view 是纯函数，直接看组件树。 */
+const section = () => createAutoCheckinSection({})
+
+test('自动签到页没有「改执行时刻」入口', () => {
+  const text = JSON.stringify(section().view(true))
+  assert.equal(text.includes('auto-edit-times'), false, '不该再有改时刻的动作')
+  assert.equal(text.includes('auto-pick'), false, '不该再有选时刻的动作')
+  assert.equal(text.includes('autoTimeItems'), false, '不该再有候选时刻列表')
 })
 
-test('缺前导零一律拒掉（Jet Hub 只收 HH:MM）', () => {
-  assert.equal(validateTimes('8:30', '20:30').error, 'time1')
-  assert.equal(validateTimes('09:00', '9:00').error, 'time2')
+test('自动签到页的动作只剩开关、收起、刷新', () => {
+  const actions = Object.keys(section().actions)
+  assert.deepEqual(actions.sort(), ['auto-dismiss', 'auto-refresh', 'auto-toggle'])
 })
 
-test('越界与非数字拒掉', () => {
-  assert.equal(validateTimes('24:00', '09:00').error, 'time1')
-  assert.equal(validateTimes('09:60', '10:00').error, 'time1')
-  assert.equal(validateTimes('ab:cd', '10:00').error, 'time1')
-})
-
-test('空值与缺失拒掉', () => {
-  assert.equal(validateTimes('', '10:00').error, 'time1')
-  assert.equal(validateTimes(undefined, '10:00').error, 'time1')
-  assert.equal(validateTimes('09:00', undefined).error, 'time2')
-})
-
-test('两个时刻相同拒掉', () => {
-  assert.equal(validateTimes('09:00', '09:00').error, 'same')
-})
-
-test('前后空格会被去掉后再判', () => {
-  assert.deepEqual(validateTimes(' 09:00 ', ' 21:00 ').times, ['09:00', '21:00'])
-})
-
-test('午夜与深夜边界都合法', () => {
-  assert.deepEqual(validateTimes('00:00', '23:59').times, ['00:00', '23:59'])
+test('这一页保留开关行与执行时刻读数', () => {
+  const view = section().view(true)
+  const text = JSON.stringify(view)
+  assert.equal(text.includes('autoItems'), true, '开关行还在')
+  assert.equal(text.includes('执行时刻'), true, '时刻只作为读数展示')
 })
