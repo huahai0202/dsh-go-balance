@@ -13,7 +13,7 @@ import { createRuntime } from '../lib/runtime.js'
 const TTL = 300_000
 
 /** 假 connection：按方法计数，可让每个 RPC 延迟完成，用来观察「有没有等」。 */
-function fakeCtx({ rpcDelayMs = 0, order = ['trae', 'buddy'], failProbe = false, failAccounts = false, emptyAccounts = false } = {}) {
+function fakeCtx({ rpcDelayMs = 0, order = ['trae', 'buddy'], failProbe = false, failAccounts = false, emptyAccounts = false, missingProviders = [] } = {}) {
   const calls = []
   const connection = {
     browserPeer: {},
@@ -23,13 +23,21 @@ function fakeCtx({ rpcDelayMs = 0, order = ['trae', 'buddy'], failProbe = false,
         calls.push(payload.method)
         if (rpcDelayMs > 0) await new Promise((r) => setTimeout(r, rpcDelayMs))
         if (failProbe && payload.method === 'provider.getOrder') throw new Error('no-connection')
-        if (failAccounts && payload.method === 'account.list') {
-          return { json: async () => ({ result: { ok: false, error: { message: 'jet-hub down' } } }) }
+        if (failAccounts && payload.method === 'provider.status') {
+          // 整份没回来：探测会抛 no-statuses，走「保留旧列表」那条路。
+          return { json: async () => ({ result: { ok: true, value: { statuses: {} } } }) }
         }
+        // 探测现在走 provider.status（一次问全部渠道），不再是逐渠道 account.list。
         const value = payload.method === 'provider.getOrder'
           ? { order }
-          : payload.method === 'account.list'
-            ? { accounts: emptyAccounts ? [] : [{ id: `${payload.payload.provider}-1`, enabled: true }] }
+          : payload.method === 'provider.status'
+            ? {
+                statuses: Object.fromEntries(payload.payload.providers.filter((p) => !missingProviders.includes(p)).map((p) => [p, {
+                  models: { total: 10, disabled: 0 },
+                  accounts: { total: 1, enabled: emptyAccounts ? 0 : 1 },
+                  closed: false,
+                }])),
+              }
             : {}
         return { json: async () => ({ result: { ok: true, value } }) }
       },
@@ -74,7 +82,7 @@ test('冷启动（没有旧列表）必须等一次探测', async () => {
   await r.stateReady
   const cache = await r.readConfiguredProviders(false)
   assert.deepEqual(cache.value.map((x) => x.provider), ['trae'])
-  assert.equal(calls.filter((m) => m === 'account.list').length, 1)
+  assert.equal(calls.filter((m) => m === 'provider.status').length, 1)
 })
 
 test('force 会等探测完成，不拿旧列表糊弄', async () => {
@@ -95,14 +103,15 @@ test('并发只探一轮', async () => {
   assert.equal(calls.filter((m) => m === 'provider.getOrder').length, 1)
 })
 
-test('探不到任何渠道且带失败数时保留旧列表', async () => {
+test('provider.status 整份没回来时保留旧列表', async () => {
   const { ctx } = fakeCtx({ order: ['trae', 'buddy'], failAccounts: true })
   const r = createRuntime(ctx)
   await r.stateReady
   r.channelsCache = staleCache()
   await r.refreshChannels(true)
+  // 整份没回来 ⇒ 保留旧列表，失败数 +1（不再是逐渠道累加）。
   assert.deepEqual(r.channelsCache.value, [{ provider: 'old', count: 1 }])
-  assert.equal(r.channelsCache.failed, 2)
+  assert.equal(r.channelsCache.failed, 1)
 })
 
 test('确实一个账号都没有（没有失败）时接受空列表', async () => {
@@ -113,4 +122,15 @@ test('确实一个账号都没有（没有失败）时接受空列表', async ()
   await r.refreshChannels(true)
   assert.deepEqual(r.channelsCache.value, [])
   assert.equal(r.channelsCache.failed, 0)
+})
+test('个别渠道不在 statuses 里时算失败，不算「没有账号」', async () => {
+  // provider.status 只会返回它认得的渠道；不认的那项缺席。缺席不等于「这个渠道
+  // 没有账号」—— 后者是真实状态，前者是这一项压根没查到，必须计入 failed。
+  const { ctx } = fakeCtx({ order: ['trae', 'gone'], missingProviders: ['gone'] })
+  const r = createRuntime(ctx)
+  await r.stateReady
+  const cache = await r.refreshChannels(true)
+  assert.deepEqual(cache.value.map((x) => x.provider), ['trae'])
+  assert.equal(cache.failed, 1)
+  assert.equal(cache.value[0].count, 1)
 })

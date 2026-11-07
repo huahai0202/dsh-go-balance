@@ -9,6 +9,7 @@ import { test } from 'node:test'
 import {
   DAY_MS,
   earliestCaption,
+  expiryAlert,
   expiryNote,
   fmtAmount,
   mergeSplits,
@@ -179,4 +180,46 @@ test('expiryNote：已过期与独立池单独说明', () => {
   assert.match(note, /已过期 30/)
   assert.match(note, /独立池 777/)
   assert.match(note, /不计入/)
+})
+
+// ── 临期预警（expiryAlert）────────────────────────────────────────────
+//
+// 面板顶部那一行只在「真会作废」时出现。这里钉住三个边界：
+// 金额为 0 不出现、最急那笔进入 3 天内升级成 warn、没有逐笔日期时不编造日期。
+
+test('expiryAlert：临期金额为 0 时不出现', () => {
+  assert.equal(expiryAlert({ windowDays: 7, expiring: 0 }, NOW, true), undefined)
+  assert.equal(expiryAlert(undefined, NOW, true), undefined)
+  // 没有窗口天数（不分档渠道）也不该出现。
+  assert.equal(expiryAlert({ expiring: 100 }, NOW, true), undefined)
+})
+
+test('expiryAlert：3 天内作废升级成 warn，并写明天数', () => {
+  const split = { windowDays: 7, expiring: 120, earliestExpiringAt: NOW + DAY_MS * 2 }
+  const alert = expiryAlert(split, NOW, true)
+  assert.equal(alert.tone, 'warn')
+  assert.match(alert.text, /2 天后作废/)
+  assert.match(alert.text, /120/)
+})
+
+test('expiryAlert：还早时只是 info，同样写明天数', () => {
+  const split = { windowDays: 7, expiring: 120, earliestExpiringAt: NOW + DAY_MS * 6 }
+  const alert = expiryAlert(split, NOW, true)
+  assert.equal(alert.tone, 'info')
+  assert.match(alert.text, /6 天后作废/)
+})
+
+test('expiryAlert：今天到期时说「今天」', () => {
+  const split = { windowDays: 7, expiring: 50, earliestExpiringAt: NOW + 60_000 }
+  const alert = expiryAlert(split, NOW, true)
+  assert.equal(alert.tone, 'warn')
+  assert.match(alert.text, /今天就会作废/)
+})
+
+test('expiryAlert：上游只给「其中 N 即将到期」时不说具体日期', () => {
+  // earliestExpiringAt 缺失 = 没有逐笔日期，只能说窗口，不能编造「几天后」。
+  const alert = expiryAlert({ windowDays: 7, expiring: 120 }, NOW, true)
+  assert.equal(alert.tone, 'info')
+  assert.match(alert.text, /7 天内/)
+  assert.doesNotMatch(alert.text, /天后/)
 })
