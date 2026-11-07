@@ -1,6 +1,6 @@
 {
   "name": "local-balance",
-  "version": "0.9.1",
+  "version": "0.11.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -99,6 +99,19 @@
           },
           "icon": "list",
           "placement": [
+            "plugin"
+          ],
+          "presentation": "sheet"
+        },
+        {
+          "id": "host",
+          "title": {
+            "zh": "主机设置",
+            "en": "Host settings"
+          },
+          "icon": "server",
+          "placement": [
+            "features",
             "plugin"
           ],
           "presentation": "sheet"
