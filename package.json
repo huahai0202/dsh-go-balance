@@ -1,6 +1,6 @@
 {
   "name": "local-balance",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -82,8 +82,8 @@
         {
           "id": "manage",
           "title": {
-            "zh": "模型与账号",
-            "en": "Models/accounts"
+            "zh": "管理",
+            "en": "Manage"
           },
           "icon": "settings",
           "placement": [
