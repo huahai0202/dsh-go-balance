@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { applyOrder, moveInOrder, moveSelected, orderedIdsOf } from '../lib/order.js'
+import { applyOrder, moveInOrder, moveSelected, nextOpenGroup, orderedIdsOf } from '../lib/order.js'
 
 const IDS = ['a', 'b', 'c', 'd']
 
@@ -115,4 +115,24 @@ test('applyOrder 丢掉对不上的 id，不产出空条目', () => {
   assert.deepEqual(applyOrder(accounts, ['b', 'gone', 'a']), [{ id: 'b' }, { id: 'a' }])
   assert.deepEqual(applyOrder(undefined, ['a']), [])
   assert.deepEqual(applyOrder(accounts, undefined), accounts)
+})
+
+// ── 模型分组展开 / 收起 ──────────────────────────────────────
+
+test('点已展开的组会收起它（回到空态）', () => {
+  // 这是「已开启」那组收不起来的回归用例：早先写成「回落成 on」，
+  // 点「已开启」只是把状态重新设成它自己展开的样子。
+  assert.equal(nextOpenGroup('on', 'on'), '')
+  assert.equal(nextOpenGroup('off', 'off'), '')
+  assert.equal(nextOpenGroup('dead', 'dead'), '')
+})
+
+test('点别的组会切过去', () => {
+  assert.equal(nextOpenGroup('on', 'off'), 'off')
+  assert.equal(nextOpenGroup('', 'on'), 'on')
+  assert.equal(nextOpenGroup('', 'dead'), 'dead')
+})
+
+test('未知组名不改变状态', () => {
+  assert.equal(nextOpenGroup('on', 'bogus'), 'on')
 })
