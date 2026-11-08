@@ -7,9 +7,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/huahai0202/dsh-go-channel-balance.git"
+    "url": "git+https://github.com/huahai0202/dsh-go-balance.git"
   },
-  "homepage": "https://github.com/huahai0202/dsh-go-channel-balance#readme",
+  "homepage": "https://github.com/huahai0202/dsh-go-balance#readme",
   "keywords": [
     "dsh",
     "dsh-go",

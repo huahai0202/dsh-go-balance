@@ -26,8 +26,8 @@ dsh-go 手机 App 的原生插件：在输入框上方加一个「渠道余额�
 插件装在**主机**上（手机本机引擎或远程主机都行）：
 
 ```sh
-git clone https://github.com/huahai0202/dsh-go-channel-balance.git
-dsh plugin --profile web add ./dsh-go-channel-balance
+git clone https://github.com/huahai0202/dsh-go-balance.git
+dsh plugin --profile web add ./dsh-go-balance
 ```
 
 装上是链接方式，**目录不能删**。`lib/` 里的代码改了要重启引擎才生效；`package.json` 改了会自动重读。
