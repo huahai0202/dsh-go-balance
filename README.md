@@ -18,7 +18,7 @@ dsh-go 手机 App 的原生插件：在输入框上方加一个「渠道余额�
 
 - **账号列表顺序就是自动选号的优先级**：点「调整顺序」进排序页，勾选一个或多个账号（点行就是勾选），再用「上移 / 下移」一格一格挪，或「移到最前 / 最后」一步到位。连点会自动合并成一次写入。
 - **整条渠道开关**（模型页底部那一行）与「全部关闭模型」不是一回事：前者还会停用该渠道的全部账号。
-- **管理是两级结构**：进面板先看三个选项，点一项进入它的内容页，顶部有「返回管理」。这样一次只画一页，不会因为三页内容高低不同而让弹层伸缩。
+- **管理是两级结构**：进面板先看四个选项，点一项进入它的内容页，顶部有「返回管理」。这样一次只画一页，不会因为各页内容高低不同而让弹层伸缩。
 - **主机设置与自动签到都在「管理」里面**，不再单独占面板入口。主机跟渠道无关，所以没选渠道时也能进。网关开关只管开关和监听地址，插件本身不监听端口、不读密钥文件，Key 只用于复制。
 
 ## 安装
@@ -56,10 +56,12 @@ dsh plugin --profile web remove local-balance
 ## 开发
 
 ```sh
-npm test          # 38 个单测：分档逻辑 + 签到文案 + 账号排序
+npm test          # 70 个单测：分档逻辑 + 签到文案 + 账号排序 + 面板数据契约
 ```
 
-纯函数在 `lib/split.js`（余额分档）、`lib/checkin.js`（签到结果格式化）和 `lib/order.js`（账号排序），这三块有单测；其余是面板和 RPC 胶水。
+纯函数在 `lib/split.js`（余额分档）、`lib/checkin.js`（签到结果格式化）、`lib/order.js`（账号排序），这三块有单测；`lib/runtime.js` 的渠道列表缓存（先给旧值、后台补新）在 `test/runtime.test.mjs` 里单独盯。
+
+`test/home.test.mjs`、`test/data-contract.test.mjs` 要起一个假宿主，用的是 dsh-go 插件技能自带的 `kit`（`$DSH_HOME/skills/dsh-go-plugin/kit/lib/testing.js`）。路径由 `test/kit.mjs` 解析（`DSH_HOME` → `~/.dsh`），**没装技能时这两个文件里的 4 个用例自动跳过**，其余 66 个照常跑 —— 别人 clone 下来也能 `npm test`。
 
 ```
 lib/
@@ -73,7 +75,9 @@ lib/
   host.js           主机级开关的 RPC 封装
   labels.js         渠道 id → 展示名
   prefs.js          「上次选的渠道」的读写
-  panels/           balance / manage / channels / host 四个面板
+  panels/           balance / manage / channels 三个注册面板
+    host.js         管理里的「主机设置」子页
+    auto-checkin.js 管理里的「自动签到」子页
 ```
 
 ## 说明

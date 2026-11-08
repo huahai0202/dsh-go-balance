@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { createTestHost } from '/root/.dsh/skills/dsh-go-plugin/kit/lib/testing.js'
+import { createTestHost, SKIP_KIT } from './kit.mjs'
 
 /** 起一个「所有 RPC 都失败」的宿主，模拟数据推不上来的情形。 */
 function brokenHost() {
@@ -23,7 +23,7 @@ function brokenHost() {
   })
 }
 
-test('首页完全不依赖数据绑定（RPC 全挂、data 未起也能用）', async () => {
+test('首页完全不依赖数据绑定（RPC 全挂、data 未起也能用）', { skip: SKIP_KIT }, async () => {
   const host = brokenHost()
   const { apply } = await import('../lib/index.js')
   apply(host.ctx)
@@ -32,7 +32,7 @@ test('首页完全不依赖数据绑定（RPC 全挂、data 未起也能用）',
   assert.equal(text.includes('"$"'), false, '首页不应出现任何数据绑定')
 })
 
-test('首页有四个入口，各自指向正确的页面', async () => {
+test('首页有四个入口，各自指向正确的页面', { skip: SKIP_KIT }, async () => {
   const host = brokenHost()
   const { apply } = await import('../lib/index.js')
   apply(host.ctx)

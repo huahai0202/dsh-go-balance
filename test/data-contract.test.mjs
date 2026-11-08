@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { createTestHost } from '/root/.dsh/skills/dsh-go-plugin/kit/lib/testing.js'
+import { createTestHost, SKIP_KIT } from './kit.mjs'
 
 /** 起一个宿主：所有 RPC 都失败，用来拿「最坏情况下的骨架数据」。 */
 function brokenHost() {
@@ -74,7 +74,7 @@ async function pageKeys(tab, locale) {
 const TABS = ['home', 'models', 'accounts', 'auto', 'host']
 const LOCALES = ['zh-CN', 'en-US']
 
-test('每个页面上，视图绑定的键都有数据（否则该处显示成「—」）', async () => {
+test('每个页面上，视图绑定的键都有数据（否则该处显示成「—」）', { skip: SKIP_KIT }, async () => {
   for (const tab of TABS) {
     for (const locale of LOCALES) {
       const { bound, provided, errors } = await pageKeys(tab, locale)
@@ -85,7 +85,7 @@ test('每个页面上，视图绑定的键都有数据（否则该处显示成�
   }
 })
 
-test('切页（走缓存）与首次进页（走 IO）给出的字段一致', async () => {
+test('切页（走缓存）与首次进页（走 IO）给出的字段一致', { skip: SKIP_KIT }, async () => {
   // 两条路径由 accountPageFields / modelPageFields 共用，但调用方不同：
   // 走缓存的少了字段就是「切回来时数字闪成破折号」。用同一份假数据分别喂两边，
   // 比较键集合 —— 这是唯一能自动盯住「两处各写一遍」的办法。
