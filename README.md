@@ -21,7 +21,6 @@ dsh-go 手机 App 的原生插件：在输入框上方加一个「渠道余额�
 - **管理是两级结构**：进面板先看四个选项，点一项进入它的内容页，顶部有「返回管理」。这样一次只画一页，不会因为各页内容高低不同而让弹层伸缩。
 - **主机设置与自动签到都在「管理」里面**，不再单独占面板入口。主机跟渠道无关，所以没选渠道时也能进。网关开关只管开关和监听地址，插件本身不监听端口、不读密钥文件，Key 只用于复制。
 - **自动签到页会摆出上一轮的逐渠道结果**（宿主写进 `channels` 的那份），以及 Jet Hub 算出的真实下次时刻。「下次 01:18」这种可能是补跑旧时段，所以带日期。想回答「签到到底有没有效果」，看这一块。
-- **输入框上方的状态条**只讲今天：`今日签到 5/5`、`今日未签 · 下次 09:00`、`自动签到已关`。点它打开渠道余额面板。
 - **锁定永久积分**按渠道生效（Jet Hub 的 `credits.permanentLock`），锁定后选号只烧会到期的积分。页面只列 Jet Hub 支持该开关的渠道，且只查已配置的那些。
 - **备份文件里有登录凭据**：本机引擎写到 `Download/DSH-Go/`（权限 0600），远程主机回落到 `$DSH_HOME/dsh-go/backups/`。可用 `DSH_GO_BACKUP_DIR` 指定别的目录。导入默认走「只追加新账号」，要整体替换得在确认框里再点一次。
 
@@ -60,12 +59,12 @@ dsh plugin --profile web remove local-balance
 ## 开发
 
 ```sh
-npm test          # 82 个单测：分档逻辑 + 签到文案 + 状态条 + 账号排序 + 备份文件名 + 面板数据契约
+npm test          # 79 个单测：分档逻辑 + 签到文案 + 账号排序 + 备份文件名 + 面板数据契约
 ```
 
 纯函数在 `lib/split.js`（余额分档）、`lib/checkin.js`（签到结果格式化）、`lib/order.js`（账号排序），这三块有单测；`lib/runtime.js` 的渠道列表缓存（先给旧值、后台补新）在 `test/runtime.test.mjs` 里单独盯。
 
-`test/home.test.mjs`、`test/data-contract.test.mjs` 要起一个假宿主，用的是 dsh-go 插件技能自带的 `kit`（`$DSH_HOME/skills/dsh-go-plugin/kit/lib/testing.js`）。路径由 `test/kit.mjs` 解析（`DSH_HOME` → `~/.dsh`），**没装技能时这两个文件里的 4 个用例自动跳过**，其余 78 个照常跑 —— 别人 clone 下来也能 `npm test`。
+`test/home.test.mjs`、`test/data-contract.test.mjs` 要起一个假宿主，用的是 dsh-go 插件技能自带的 `kit`（`$DSH_HOME/skills/dsh-go-plugin/kit/lib/testing.js`）。路径由 `test/kit.mjs` 解析（`DSH_HOME` → `~/.dsh`），**没装技能时这两个文件里的 4 个用例自动跳过**，其余 75 个照常跑 —— 别人 clone 下来也能 `npm test`。
 
 ```
 lib/
@@ -79,7 +78,6 @@ lib/
   host.js           主机级开关的 RPC 封装
   labels.js         渠道 id → 展示名
   prefs.js          「上次选的渠道」的读写
-  strip.js          输入框上方的签到状态条
   backup.js         备份文件落盘、列目录、读回（文件名白名单）
   panels/           balance / manage / channels 三个注册面板
     host.js         管理里的「主机设置」子页

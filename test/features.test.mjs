@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { channelRows, runSummary, stripText, whenLabel } from '../lib/checkin.js'
+import { channelRows, runSummary, whenLabel } from '../lib/checkin.js'
 import { BACKUP_PREFIX, backupFileName, fmtBytes, isBackupFile, listBackups, readBackup, writeBackup } from '../lib/backup.js'
 
 const labelOf = (provider) => ({ qodercn: 'Qoder 国内', trae: 'TRAE' }[provider] ?? provider)
@@ -61,45 +61,6 @@ test('runSummary：优先用宿主 lastResult，超长截断', () => {
   assert.equal(runSummary(undefined, true), '读不到上次结果。')
   const long = runSummary({ lastResult: 'x'.repeat(200) }, true)
   assert.equal(long.length, 120, '截断到 120 字以内')
-})
-
-test('stripText：24 字以内，只讲今天', () => {
-  const now = new Date(2026, 10, 9, 8, 0).getTime()
-  const cases = [
-    [undefined, true],
-    [{ enabled: false }, true],
-    [{ enabled: true, running: true }, true],
-    [{ enabled: true, ranToday: true, channels: [{ provider: 'qodercn', text: '2 个 +200积分' }, { provider: 'trae', text: '本轮已处理' }, { provider: 'opencode', text: '无签到接口' }] }, true],
-    [{ enabled: true, ranToday: false, nextRunAt: now + 3600_000 }, true],
-    [{ enabled: true, ranToday: true }, true],
-    [{ enabled: true, ranToday: false }, true],
-    [{ enabled: true, ranToday: true, channels: [{ provider: 'a', text: '2 个 +200积分' }] }, false],
-  ]
-  for (const [state, zh] of cases) {
-    const text = stripText(state, now, zh)
-    assert.equal(typeof text, 'string')
-    assert.equal(text.length <= 24, true, `超过 24 字：${text}`)
-    assert.equal(text.includes('undefined'), false)
-  }
-})
-
-test('stripText：分母不把「无签到接口」算进去', () => {
-  const now = new Date(2026, 10, 9, 12, 0).getTime()
-  const text = stripText({
-    enabled: true,
-    ranToday: true,
-    channels: [
-      { provider: 'qodercn', text: '2 个 +200积分' },
-      { provider: 'trae', text: '本轮已处理' },
-      { provider: 'raccoon', text: '无签到接口' },
-      { provider: 'opencode', text: '无签到接口' },
-    ],
-  }, now, true)
-  assert.equal(text, '今日签到 2/2')
-})
-
-test('stripText：关闭时明确说关着', () => {
-  assert.equal(stripText({ enabled: false, ranToday: true }, Date.now(), true), '自动签到已关')
 })
 
 test('backupFileName：文件名带前缀、不带冒号', () => {
