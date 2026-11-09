@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { channelRows, runSummary, whenLabel } from '../lib/checkin.js'
+import { isMomentMs } from '../lib/util.js'
 import { BACKUP_PREFIX, backupFileName, fmtBytes, isBackupFile, listBackups, readBackup, writeBackup } from '../lib/backup.js'
 
 const labelOf = (provider) => ({ qodercn: 'Qoder 国内', trae: 'TRAE' }[provider] ?? provider)
@@ -203,4 +204,22 @@ test('子页读失败时把原因带给用户，不留一个干巴巴的「读�
     `失败说明里要带上真实原因，实际是：${fields.backupNote}`,
   )
   assert.equal(fields.backupNote.includes('未知原因'), false, '不该退化成「未知原因」')
+})
+
+test('时刻判据不把 Infinity / 超范围值当成有效时刻', () => {
+  // 上游 JSON 里出现 `Infinity` 或超范围的值是现实存在的脏数据。用 `Number(v) > 0`
+  // 判会让它们通过 —— 界面上就成了「永久限流 / 已封禁」，而格式化还会抛 RangeError。
+  // 判据与 Jet Hub 内部的 `isValidResetAtMs` 一致。
+  assert.equal(isMomentMs(Infinity), false)
+  assert.equal(isMomentMs(9e15), false)
+  assert.equal(isMomentMs(1e16), false)
+  assert.equal(isMomentMs(NaN), false)
+  assert.equal(isMomentMs(-1), false)
+  assert.equal(isMomentMs(0), false)
+  assert.equal(isMomentMs('1234'), false)
+  assert.equal(isMomentMs(null), false)
+  assert.equal(isMomentMs(undefined), false)
+  // 正常值要照常通过。
+  assert.equal(isMomentMs(1), true)
+  assert.equal(isMomentMs(Date.now()), true)
 })
