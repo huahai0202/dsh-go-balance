@@ -20,14 +20,14 @@ test('whenLabel：同一天只给时刻，跨天才带日期', () => {
   const now = new Date(2026, 10, 9, 10, 30).getTime()
   const sameDay = new Date(2026, 10, 9, 21, 5).getTime()
   const otherDay = new Date(2026, 10, 8, 21, 0).getTime()
-  assert.equal(whenLabel(sameDay, now, true), '21:05')
-  assert.equal(whenLabel(otherDay, now, true), '11-08 21:00')
-  assert.equal(whenLabel(0, now, true), '')
-  assert.equal(whenLabel(undefined, now, true), '')
+  assert.equal(whenLabel(sameDay, now), '21:05')
+  assert.equal(whenLabel(otherDay, now), '11-08 21:00')
+  assert.equal(whenLabel(0, now), '')
+  assert.equal(whenLabel(undefined, now), '')
 })
 
 test('whenLabel：非法 now 回落到当前时间，不抛', () => {
-  assert.equal(typeof whenLabel(Date.now(), undefined, true), 'string')
+  assert.equal(typeof whenLabel(Date.now(), undefined), 'string')
 })
 
 test('channelRows：用宿主原文，只把「本轮已处理」翻成人话', () => {
@@ -122,4 +122,85 @@ test('备份读写：写进临时 DSH_HOME，读回来内容一致，权限收�
 
   // 白名单之外的路径一律拒绝。
   await assert.rejects(() => readBackup('../passwd'), /bad-backup-name/)
+})
+
+test('子页的两条渲染路径（data / peek）必须给出同一批字段', async (t) => {
+  // 背景：这类页有两条渲染路径 —— `data` 走一次 IO，`peek` 在切页时用缓存。
+  // 早先两处各写一遍字段构建，结果文案漂了（缓存路径的副标题丢了「N 个没记到
+  // 期时间」），切页回来会闪一下再变回去。现在两处共用一个 buildFields，
+  // 这个用例盯住「有人又把它拆成两份」。
+  const home = await mkdtemp(join(tmpdir(), 'dsh-peek-test-'))
+  const savedDir = process.env.DSH_GO_BACKUP_DIR
+  process.env.DSH_GO_BACKUP_DIR = join(home, 'backups')
+  t.after(async () => {
+    if (savedDir === undefined) delete process.env.DSH_GO_BACKUP_DIR
+    else process.env.DSH_GO_BACKUP_DIR = savedDir
+    await rm(home, { recursive: true, force: true })
+  })
+
+  const { createBackupSection } = await import('../lib/panels/backup.js')
+  const { createPermanentLockSection } = await import('../lib/panels/permanent-lock.js')
+
+  // 用「读取成功」的 ctx：失败路径刻意不写缓存（peek 返回 undefined 是对的），
+  // 那一路由下面「读失败要带原因」那个用例盯。
+  const okCtx = {
+    get: () => ({
+      createSharedFetchHandler: () => ({
+        fetch: async (request) => {
+          const body = JSON.parse(await request.text())
+          const method = body?.payload?.method
+          const value = method === 'backup.status'
+            ? { accounts: 2, withoutExpiry: 0, accountList: [] }
+            : { provider: 'trae', locked: false }
+          return { json: async () => ({ result: { ok: true, value } }) }
+        },
+      }),
+      browserPeer: {},
+    }),
+  }
+  const sections = [
+    ['backup', createBackupSection(okCtx), (s, emit) => s.data(emit, true, true, {})],
+    ['lock', createPermanentLockSection(okCtx), (s, emit) => s.data(emit, true, true, {})],
+  ]
+  for (const [name, section, run] of sections) {
+    let cold
+    await run(section, (patch) => { cold = patch })
+    assert.equal(typeof cold, 'object', `${name} 的 data 没推字段`)
+    const warm = section.peek(true)
+    assert.notEqual(warm, undefined, `${name} 的 peek 没有缓存`)
+    assert.deepEqual(
+      Object.keys(warm).sort(),
+      Object.keys(cold).sort(),
+      `${name} 的 data / peek 字段不一致（切页会闪）`,
+    )
+  }
+})
+
+test('子页读失败时把原因带给用户，不留一个干巴巴的「读不到」', async (t) => {
+  const home = await mkdtemp(join(tmpdir(), 'dsh-fail-test-'))
+  const savedDir = process.env.DSH_GO_BACKUP_DIR
+  process.env.DSH_GO_BACKUP_DIR = join(home, 'backups')
+  t.after(async () => {
+    if (savedDir === undefined) delete process.env.DSH_GO_BACKUP_DIR
+    else process.env.DSH_GO_BACKUP_DIR = savedDir
+    await rm(home, { recursive: true, force: true })
+  })
+
+  const { createBackupSection } = await import('../lib/panels/backup.js')
+  // RPC 全挂的 ctx：backup.status 一行都读不回来。
+  const brokenCtx = {
+    get: () => ({ createSharedFetchHandler: () => ({ fetch: async () => { throw new Error('rpc down') } }), browserPeer: {} }),
+  }
+  const section = createBackupSection(brokenCtx)
+  let fields
+  await section.data((patch) => { fields = patch }, true, true, {})
+  assert.equal(fields.backupNoteTone, 'warn', '失败要标成警告')
+  // ⚠️ 不能只匹配「读不到…：任意字符」—— 没有原因时文案会退化成
+  // 「未知原因」，那种正则照样通过，等于一个恒真的假测试。
+  assert.equal(
+    fields.backupNote.includes('rpc down'),
+    true,
+    `失败说明里要带上真实原因，实际是：${fields.backupNote}`,
+  )
+  assert.equal(fields.backupNote.includes('未知原因'), false, '不该退化成「未知原因」')
 })
