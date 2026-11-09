@@ -1,6 +1,6 @@
 {
   "name": "local-balance",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -103,8 +103,15 @@
           ],
           "presentation": "sheet"
         }
+      ],
+      "composer.strip": [
+        {
+          "id": "checkin",
+          "icon": "alarm",
+          "panel": "balance"
+        }
       ]
     }
   },
-  "description": "在输入框上方添加「渠道余额」胶囊；支持渠道余额、一键签到、渠道切换（独立面板）、模型开关与账号管理（合并在一个面板，含添加账号的浏览器登录、批量开关、启停/改名/刷新/测试/重置/删除）与 ChatGPT/Codex 账号使用额度查询。"
+  "description": "在输入框上方添加「渠道余额」胶囊与签到状态条；支持渠道余额、一键签到、渠道切换（独立面板）、模型开关与账号管理（含添加账号的浏览器登录、批量开关、启停/改名/刷新/测试/重置/删除）、自动签到（含上次结果逐渠道明细）、锁定永久积分、账号池备份与恢复，以及 ChatGPT/Codex 账号使用额度查询。"
 }

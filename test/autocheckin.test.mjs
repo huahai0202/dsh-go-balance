@@ -23,9 +23,12 @@ test('自动签到页的动作只剩开关、收起、刷新', () => {
   assert.deepEqual(actions.sort(), ['auto-dismiss', 'auto-refresh', 'auto-toggle'])
 })
 
-test('这一页保留开关行与执行时刻读数', () => {
+test('这一页保留开关行，并且时刻只作为读数', () => {
   const view = section().view(true)
   const text = JSON.stringify(view)
   assert.equal(text.includes('autoItems'), true, '开关行还在')
-  assert.equal(text.includes('执行时刻'), true, '时刻只作为读数展示')
+  // 两个时刻在开关行的副标题里（「每天 09:00 · 21:00」），
+  // 顶部那张卡改成 Jet Hub 算出的真实下次时刻，两者不重复。
+  assert.equal(text.includes('下次执行'), true, '顶部给下次执行时刻')
+  assert.equal(text.includes('data.autoLastText'), true, '上次结果要摆出来')
 })

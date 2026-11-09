@@ -71,7 +71,7 @@ async function pageKeys(tab, locale) {
   return { bound, provided, errors: feed.errors }
 }
 
-const TABS = ['home', 'models', 'accounts', 'auto', 'host']
+const TABS = ['home', 'models', 'accounts', 'auto', 'host', 'lock', 'backup']
 const LOCALES = ['zh-CN', 'en-US']
 
 test('每个页面上，视图绑定的键都有数据（否则该处显示成「—」）', { skip: SKIP_KIT }, async () => {
@@ -94,7 +94,7 @@ test('切页（走缓存）与首次进页（走 IO）给出的字段一致', { 
   apply(host.ctx)
   const boot = host.subscribe('manage', { sessionId: 's1' })
   await boot.settled
-  for (const tab of ['models', 'accounts']) {
+  for (const tab of ['models', 'accounts', 'auto', 'lock', 'backup']) {
     const cold = host.subscribe('manage', { sessionId: 's1' })
     await host.invoke('manage', {
       surface: 'panel', action: 'manage-tab', value: { tab }, scope: { sessionId: 's1' }, locale: 'zh-CN',
