@@ -59,16 +59,16 @@ dsh plugin --profile web remove local-balance
 ## 开发
 
 ```sh
-npm test          # 82 个单测：分档逻辑 + 签到文案 + 账号排序 + 备份文件名 + 面板数据契约
+npm test          # 101 个单测：分档 + 签到文案 + 账号/模型视图 + 排序 + 备份文件名 + 面板数据契约
 ```
 
-纯函数在 `lib/split.js`（余额分档）、`lib/checkin.js`（签到结果格式化）、`lib/order.js`（账号排序），这三块有单测；`lib/runtime.js` 的渠道列表缓存（先给旧值、后台补新）在 `test/runtime.test.mjs` 里单独盯。
+纯函数在 `lib/split.js`（余额分档）、`lib/checkin.js`（签到结果格式化）、`lib/order.js`（账号排序）、`lib/panels/account-view.js`（账号 / 模型页字段），这几块有单测；`lib/runtime.js` 的渠道列表缓存（先给旧值、后台补新）在 `test/runtime.test.mjs` 里单独盯。
 
 上游 JSON 里的时刻字段用 `lib/util.js` 的 `isMomentMs` 判定（有限数字、`> 0`、不超出 `Date` 范围），不要写 `Number(x) > 0`：`Infinity` 会通过，界面上就成了「永久限流 / 已封禁」。
 
 `test/features.test.mjs` 另外锁住两条「改起来容易漏」的约定：子页的 `data`（走 IO）与 `peek`（切页用缓存）必须给出同一批字段，以及读取失败时提示里要带真实原因 —— 这两条都曾经在真实改动里漂过。
 
-`test/home.test.mjs`、`test/data-contract.test.mjs` 要起一个假宿主，用的是 dsh-go 插件技能自带的 `kit`（`$DSH_HOME/skills/dsh-go-plugin/kit/lib/testing.js`）。路径由 `test/kit.mjs` 解析（`DSH_HOME` → `~/.dsh`），**没装技能时这两个文件里的 4 个用例自动跳过**，其余 78 个照常跑 —— 别人 clone 下来也能 `npm test`。
+`test/home.test.mjs`、`test/data-contract.test.mjs` 要起一个假宿主，用的是 dsh-go 插件技能自带的 `kit`（`$DSH_HOME/skills/dsh-go-plugin/kit/lib/testing.js`）。路径由 `test/kit.mjs` 解析（`DSH_HOME` → `~/.dsh`），**没装技能时这两个文件里的 4 个用例自动跳过**，其余 97 个照常跑 —— 别人 clone 下来也能 `npm test`。
 
 ```
 lib/
@@ -88,6 +88,7 @@ lib/
     auto-checkin.js 管理里的「自动签到」子页（开关 + 上次结果明细）
     permanent-lock.js 管理里的「锁定永久积分」子页
     backup.js       管理里的「备份与恢复」子页
+    account-view.js 账号 / 模型页的纯展示逻辑（无 IO、可单测）
 ```
 
 ## 说明
