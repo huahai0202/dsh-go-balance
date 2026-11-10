@@ -182,3 +182,20 @@ test('modelFieldsOf：外部 note 优先，且标成 warn', () => {
   assert.equal(fields.modelNote, '写入有警告')
   assert.equal(fields.modelNoteTone, 'warn')
 })
+
+test('详情页状态行：停用不能盖掉「已过期 / 已封禁」', () => {
+  // 真实缺陷：`accountStatus` 在停用时会提前返回「已停用」，于是「停用 + 已过期」
+  // 的账号在详情页只显示「已停用」，过期信息整个丢了 —— 用户排查「这个号为什么
+  // 用不了」时看到「已停用」，自然会以为是没启用，而不是凭据过期。
+  // 停用只是开关态，和过期 / 封禁是两回事，必须并列显示。
+  const now = Date.now()
+  const statusOf = (account) => buildAccountDetail(account, 'trae', now, true)
+    .rows.find((row) => row[0] === '状态')?.[1]
+
+  assert.equal(statusOf({ id: 'a', nickname: '甲', enabled: true, expiresAt: now + 86_400_000 }), '正常')
+  assert.equal(statusOf({ id: 'b', nickname: '乙', enabled: false, expiresAt: now + 86_400_000 }), '已停用')
+  assert.equal(statusOf({ id: 'c', nickname: '丙', enabled: false, expiresAt: now - 1000 }), '已停用 · 已过期')
+  assert.equal(statusOf({ id: 'd', nickname: '丁', enabled: false, policyBlockedAtMs: now - 1000 }), '已停用 · 已封禁')
+  // 启用但过期：照旧只报过期。
+  assert.equal(statusOf({ id: 'e', nickname: '戊', enabled: true, expiresAt: now - 1000 }), '已过期')
+})
