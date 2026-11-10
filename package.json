@@ -30,6 +30,7 @@
   },
   "dshGo": {
     "v": 1,
+    "capabilities": ["files"],
     "title": {
       "zh": "渠道余额",
       "en": "Channel balance"
