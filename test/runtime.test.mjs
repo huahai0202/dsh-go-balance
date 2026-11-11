@@ -6,9 +6,20 @@
 // 3. 并发调用只探一轮。
 
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { beforeEach, test } from 'node:test'
 
-import { createRuntime } from '../lib/runtime.js'
+// 状态目录指到临时目录：本机真实跑过插件后，渠道快照会让「冷启动」不再是冷的。
+// 每个用例换一个新目录：上一个用例探到的渠道快照会被落盘，留着会让下一个
+// 「冷启动」用例直接吃到缓存。
+process.env.DSH_HOME = mkdtempSync(join(tmpdir(), 'balance-runtime-test-'))
+beforeEach(() => {
+  process.env.DSH_HOME = mkdtempSync(join(tmpdir(), 'balance-runtime-test-'))
+})
+
+const { createRuntime } = await import('../lib/runtime.js')
 
 const TTL = 300_000
 
