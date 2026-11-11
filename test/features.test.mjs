@@ -11,7 +11,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { channelRows, runSummary, whenLabel } from '../lib/checkin.js'
 import { isMomentMs } from '../lib/util.js'
 import {
   BACKUP_FORMAT,
@@ -23,55 +22,6 @@ import {
   parseBackupBytes,
   writeBackup,
 } from '../lib/backup.js'
-
-const labelOf = (provider) => ({ qodercn: 'Qoder 国内', trae: 'TRAE' }[provider] ?? provider)
-
-test('whenLabel：同一天只给时刻，跨天才带日期', () => {
-  const now = new Date(2026, 10, 9, 10, 30).getTime()
-  const sameDay = new Date(2026, 10, 9, 21, 5).getTime()
-  const otherDay = new Date(2026, 10, 8, 21, 0).getTime()
-  assert.equal(whenLabel(sameDay, now), '21:05')
-  assert.equal(whenLabel(otherDay, now), '11-08 21:00')
-  assert.equal(whenLabel(0, now), '')
-  assert.equal(whenLabel(undefined, now), '')
-})
-
-test('whenLabel：非法 now 回落到当前时间，不抛', () => {
-  assert.equal(typeof whenLabel(Date.now(), undefined), 'string')
-})
-
-test('channelRows：用宿主原文，只把「本轮已处理」翻成人话', () => {
-  const rows = channelRows([
-    { provider: 'qodercn', text: '2 个 +200积分' },
-    { provider: 'trae', text: '本轮已处理' },
-    { provider: 'opencode', text: '无签到接口' },
-    { provider: 'lobsterai', text: '1 个失败' },
-    { provider: '', text: '脏数据' },
-    { provider: 'astudio', text: '' },
-  ], labelOf, true)
-  assert.equal(rows.length, 4, '缺 provider 或 text 的条目要丢掉')
-  assert.equal(rows[0].title, 'Qoder 国内')
-  assert.equal(rows[0].trailing, '2 个 +200积分')
-  assert.equal(rows[0].tone, 'good')
-  assert.equal(rows[1].trailing, '已处理')
-  assert.equal(rows[2].tone, 'muted')
-  assert.equal(rows[3].tone, 'warn')
-})
-
-test('channelRows：非数组给空数组，不抛', () => {
-  assert.deepEqual(channelRows(undefined, labelOf, true), [])
-  assert.deepEqual(channelRows(null, labelOf, true), [])
-})
-
-test('runSummary：优先用宿主 lastResult，超长截断', () => {
-  assert.equal(runSummary({ lastResult: '1 个渠道：2 个账号领取成功' }, true), '1 个渠道：2 个账号领取成功')
-  assert.equal(runSummary({ running: true, lastResult: '旧结果' }, true), '正在签到…')
-  assert.equal(runSummary({ ranToday: true }, true), '今天已跑过，还没有结果记录。')
-  assert.equal(runSummary({}, true), '还没有跑过。')
-  assert.equal(runSummary(undefined, true), '读不到上次结果。')
-  const long = runSummary({ lastResult: 'x'.repeat(200) }, true)
-  assert.equal(long.length, 120, '截断到 120 字以内')
-})
 
 test('backupFileName：文件名带前缀、不带冒号', () => {
   const name = backupFileName(new Date(2026, 10, 9, 10, 34, 52).getTime())

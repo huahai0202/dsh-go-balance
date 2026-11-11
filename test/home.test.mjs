@@ -39,7 +39,7 @@ test('首页的每个入口都指向正确的页面', { skip: SKIP_KIT }, async 
   const v = await host.view('manage', { sessionId: 's1' })
   const list = v.view.children.find((c) => c.type === 'list')
   const tabs = list.items.map((i) => i.action?.args?.tab)
-  assert.deepEqual(tabs, ['models', 'accounts', 'auto', 'lock', 'host', 'backup'])
+  assert.deepEqual(tabs, ['models', 'accounts', 'lock', 'host', 'backup'])
   // 每个入口都得有标题与说明，不能只剩一个动作。
   for (const item of list.items) {
     assert.equal(typeof item.title, 'string', '入口缺标题')

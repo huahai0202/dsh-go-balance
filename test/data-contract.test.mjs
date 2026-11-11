@@ -5,8 +5,6 @@
 // 路径才复现），所以用契约测试锁住：每个页面上，视图绑定的每个 `data.*` 键，
 // 都必须由该页的数据给出来。
 //
-// 这个用例上线时当场抓到一处：自动签到读取失败的分支漏了 `autoEnabledTone`，
-// 界面会显示一个没有颜色的「—」。
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
@@ -71,7 +69,7 @@ async function pageKeys(tab, locale) {
   return { bound, provided, errors: feed.errors }
 }
 
-const TABS = ['home', 'models', 'accounts', 'auto', 'host', 'lock', 'backup']
+const TABS = ['home', 'models', 'accounts', 'host', 'lock', 'backup']
 const LOCALES = ['zh-CN', 'en-US']
 
 test('每个页面上，视图绑定的键都有数据（否则该处显示成「—」）', { skip: SKIP_KIT }, async () => {
@@ -94,7 +92,7 @@ test('切页（走缓存）与首次进页（走 IO）给出的字段一致', { 
   apply(host.ctx)
   const boot = host.subscribe('manage', { sessionId: 's1' })
   await boot.settled
-  for (const tab of ['models', 'accounts', 'auto', 'lock', 'backup']) {
+  for (const tab of ['models', 'accounts', 'lock', 'backup']) {
     const cold = host.subscribe('manage', { sessionId: 's1' })
     await host.invoke('manage', {
       surface: 'panel', action: 'manage-tab', value: { tab }, scope: { sessionId: 's1' }, locale: 'zh-CN',
