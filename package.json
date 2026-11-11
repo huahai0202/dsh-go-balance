@@ -51,20 +51,6 @@
           }
         }
       ],
-      "message.actions": [
-        {
-          "id": "message-balance",
-          "label": {
-            "zh": "看看余额",
-            "en": "Balance"
-          },
-          "icon": "wallet",
-          "effect": {
-            "type": "open",
-            "page": "panel:balance"
-          }
-        }
-      ],
       "panels": [
         {
           "id": "balance",
